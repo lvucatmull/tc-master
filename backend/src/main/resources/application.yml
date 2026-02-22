@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/tcmaster
+    username: tcmaster
+    password: tcmaster
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+jwt:
+  secret: change-me-change-me-change-me-change-me
+  expiration-minutes: 60
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
