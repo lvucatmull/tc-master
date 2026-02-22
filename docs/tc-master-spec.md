@@ -512,3 +512,20 @@ tcmaster report --project TCM --token $API_TOKEN --results ./test-results.json
 - Playwright/Jest/Pytest 등 외부 테스트 프레임워크 결과를 JSON으로 수집
 - TC ID 매핑: 코드 어노테이션 또는 테스트명 기반 자동 매칭
 - REST API: POST /api/external/results 엔드포인트 제공
+
+# 11. 진행 현황
+
+기준일: 2026-02-22
+
+| Phase | 상태 | 완료 커밋 | 비고 |
+| --- | --- | --- | --- |
+| Phase 1 - 기반 구축 | 완료 | `fbe8fc6` | Spring Boot/Next.js 기본 구조, JWT/Auth, 프로젝트 CRUD, 기본 레이아웃 |
+| Phase 2 - TC 관리 핵심 | 완료 | `658fc98` | 스위트/케이스/코드 API, TC ID 생성, Split View 편집 화면 |
+| Phase 3 - 실행 엔진 | 완료 | `618c5ae` | 실행/결과 도메인, 실행 API, WebSocket 스트리밍 스켈레톤 |
+| Phase 4 - 대시보드 및 리포트 | 완료 | `95e3bad` | 대시보드/통계/리포트 API, 차트 위젯, CSV 내보내기 |
+
+다음 작업 제안:
+
+- 의존성 설치 후 backend/frontend 빌드 및 런타임 검증
+- Flyway 마이그레이션 스크립트 작성
+- Docker sandbox 실제 실행 엔진 구현 (현재 시뮬레이션)
