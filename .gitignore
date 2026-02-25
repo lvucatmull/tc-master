@@ -10,3 +10,5 @@ frontend/out/
 # Local
 .DS_Store
 .env
+
+sevenseas/
