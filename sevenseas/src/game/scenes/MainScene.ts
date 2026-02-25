@@ -1,8 +1,9 @@
 import Phaser from "phaser";
 import { GOODS, PORTS, type Port } from "../data/world";
-import { getPortPrice } from "../systems/economy";
-import { initialPlayerState, type PlayerState } from "../state";
 import { consumeDock, controlState } from "../input/controlState";
+import { initialPlayerState, type PlayerState } from "../state";
+import { getPortPrice } from "../systems/economy";
+import { WaveField } from "../systems/waveField";
 
 const WORLD_WIDTH = 900;
 const WORLD_HEIGHT = 600;
@@ -18,9 +19,15 @@ export class MainScene extends Phaser.Scene {
 
   private seaLayer!: Phaser.GameObjects.TileSprite;
   private seaFoamLayer!: Phaser.GameObjects.TileSprite;
+  private waveLines!: Phaser.GameObjects.Graphics;
   private ship!: Phaser.GameObjects.Sprite;
   private shipWake!: Phaser.GameObjects.Ellipse;
+
+  private waveField = new WaveField();
+  private shipPosition = new Phaser.Math.Vector2(240, 320);
+  private shipHeading = new Phaser.Math.Vector2(0, -1);
   private nearbyPort: Port | null = null;
+  private currentWaveHeight = 0;
 
   private hudEl = document.getElementById("hud") as HTMLDivElement;
   private panelEl = document.getElementById("trade-panel") as HTMLDivElement;
@@ -44,8 +51,9 @@ export class MainScene extends Phaser.Scene {
 
   update(_: number, deltaMs: number): void {
     const delta = deltaMs / 1000;
-    const move = new Phaser.Math.Vector2(0, 0);
+    const timeSec = this.time.now / 1000;
 
+    const move = new Phaser.Math.Vector2(0, 0);
     const left = this.cursors.left.isDown || controlState.left;
     const right = this.cursors.right.isDown || controlState.right;
     const up = this.cursors.up.isDown || controlState.up;
@@ -56,22 +64,45 @@ export class MainScene extends Phaser.Scene {
     if (up) move.y -= 1;
     if (down) move.y += 1;
 
+    const wave = this.waveField.sample(this.shipPosition.x, this.shipPosition.y, timeSec);
+    this.currentWaveHeight = wave.height;
+
     if (move.lengthSq() > 0) {
       move.normalize();
-      this.ship.x = Phaser.Math.Clamp(this.ship.x + move.x * SHIP_SPEED * delta, 16, WORLD_WIDTH - 16);
-      this.ship.y = Phaser.Math.Clamp(this.ship.y + move.y * SHIP_SPEED * delta, 16, WORLD_HEIGHT - 16);
-      this.ship.rotation = move.angle() + Math.PI / 2;
+      this.shipHeading.copy(move);
+      const speedMultiplier = 1 + wave.height * 0.08;
+      this.shipPosition.x += move.x * SHIP_SPEED * speedMultiplier * delta;
+      this.shipPosition.y += move.y * SHIP_SPEED * speedMultiplier * delta;
       this.shipWake.setVisible(true);
-      this.shipWake.setPosition(this.ship.x - move.x * 12, this.ship.y - move.y * 12);
-      this.shipWake.rotation = this.ship.rotation;
       this.shipWake.scaleY = Phaser.Math.Linear(this.shipWake.scaleY, 1, 0.2);
     } else {
       this.shipWake.scaleY = Phaser.Math.Linear(this.shipWake.scaleY, 0.35, 0.2);
+      this.shipWake.setVisible(false);
     }
 
-    this.seaLayer.tilePositionX += 9 * delta;
-    this.seaLayer.tilePositionY += 3 * delta;
-    this.seaFoamLayer.tilePositionX += 22 * delta;
+    // Apply wave drift so the sea feels physically active.
+    this.shipPosition.x += wave.flowX * 48 * delta;
+    this.shipPosition.y += wave.flowY * 48 * delta;
+
+    this.shipPosition.x = Phaser.Math.Clamp(this.shipPosition.x, 16, WORLD_WIDTH - 16);
+    this.shipPosition.y = Phaser.Math.Clamp(this.shipPosition.y, 16, WORLD_HEIGHT - 16);
+
+    const bob = wave.height * 3.2;
+    this.ship.setPosition(this.shipPosition.x, this.shipPosition.y + bob);
+    this.ship.rotation = this.shipHeading.angle() + Math.PI / 2 + wave.flowX * 6;
+
+    this.shipWake.setPosition(
+      this.shipPosition.x - this.shipHeading.x * 12,
+      this.shipPosition.y - this.shipHeading.y * 12 + bob + 2
+    );
+    this.shipWake.rotation = this.ship.rotation;
+
+    this.seaLayer.tilePositionX += (8 + wave.flowX * 180) * delta;
+    this.seaLayer.tilePositionY += (3 + wave.flowY * 140) * delta;
+    this.seaFoamLayer.tilePositionX += (21 + wave.flowX * 260) * delta;
+    this.seaFoamLayer.tilePositionY += (6 + wave.flowY * 210) * delta;
+
+    this.updateWaveLines(timeSec);
 
     this.nearbyPort = this.findNearbyPort();
 
@@ -134,50 +165,79 @@ export class MainScene extends Phaser.Scene {
       WORLD_HEIGHT,
       "sea-pattern"
     );
+
+    this.waveLines = this.add.graphics();
+    this.waveLines.setDepth(2);
+
     this.seaFoamLayer = this.add
       .tileSprite(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, WORLD_WIDTH, WORLD_HEIGHT, "foam-pattern")
-      .setAlpha(0.45);
+      .setAlpha(0.43)
+      .setDepth(3);
 
     const vignette = this.add.rectangle(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, WORLD_WIDTH, WORLD_HEIGHT, 0x000000, 0.16);
     vignette.setBlendMode(Phaser.BlendModes.MULTIPLY);
+    vignette.setDepth(20);
+  }
+
+  private updateWaveLines(timeSec: number): void {
+    this.waveLines.clear();
+
+    for (let row = 0; row < 10; row += 1) {
+      const baseY = 42 + row * 58;
+      const alpha = 0.16 + row * 0.01;
+      this.waveLines.lineStyle(1.4, 0xa5dcf5, alpha);
+
+      this.waveLines.beginPath();
+      for (let x = 0; x <= WORLD_WIDTH; x += 30) {
+        const wave = this.waveField.sample(x, baseY, timeSec + row * 0.4);
+        const y = baseY + Math.sin(timeSec * 0.8 + row) * 4 + wave.height * 8;
+        if (x === 0) this.waveLines.moveTo(x, y);
+        else this.waveLines.lineTo(x, y);
+      }
+      this.waveLines.strokePath();
+    }
   }
 
   private createPorts(): void {
     PORTS.forEach((port) => {
-      this.add.ellipse(port.x - 18, port.y + 18, 120, 64, 0x8c6e43, 0.95);
-      this.add.ellipse(port.x - 6, port.y + 12, 96, 48, 0x588a4a, 0.85);
+      this.add.ellipse(port.x - 18, port.y + 18, 120, 64, 0x8c6e43, 0.95).setDepth(4);
+      this.add.ellipse(port.x - 6, port.y + 12, 96, 48, 0x588a4a, 0.85).setDepth(4);
 
-      const glow = this.add.circle(port.x, port.y, 10, 0xf3c878, 0.9);
-      this.add
-        .tween({
-          targets: glow,
-          alpha: { from: 0.2, to: 0.9 },
-          scale: { from: 0.9, to: 1.4 },
-          duration: 1200,
-          repeat: -1,
-          yoyo: true,
-          ease: "Sine.InOut"
-        });
-
-      this.add.circle(port.x, port.y, 5, 0x1f2c3d, 1);
-      this.add.text(port.x - 32, port.y + 20, port.name, {
-        fontFamily: "Georgia, serif",
-        fontSize: "15px",
-        color: "#fff1c8",
-        stroke: "#31210f",
-        strokeThickness: 4
+      const glow = this.add.circle(port.x, port.y, 10, 0xf3c878, 0.9).setDepth(5);
+      this.add.tween({
+        targets: glow,
+        alpha: { from: 0.2, to: 0.9 },
+        scale: { from: 0.9, to: 1.4 },
+        duration: 1200,
+        repeat: -1,
+        yoyo: true,
+        ease: "Sine.InOut"
       });
+
+      this.add.circle(port.x, port.y, 5, 0x1f2c3d, 1).setDepth(6);
+      this.add
+        .text(port.x - 32, port.y + 20, port.name, {
+          fontFamily: "Georgia, serif",
+          fontSize: "15px",
+          color: "#fff1c8",
+          stroke: "#31210f",
+          strokeThickness: 4
+        })
+        .setDepth(6);
     });
   }
 
   private createShip(): void {
-    this.ship = this.add.sprite(240, 320, "player-ship").setScale(0.9);
-    this.shipWake = this.add.ellipse(this.ship.x, this.ship.y + 12, 16, 36, 0xd0f3ff, 0.26).setVisible(false);
+    this.ship = this.add.sprite(this.shipPosition.x, this.shipPosition.y, "player-ship").setScale(0.9).setDepth(10);
+    this.shipWake = this.add
+      .ellipse(this.shipPosition.x, this.shipPosition.y + 12, 16, 36, 0xd0f3ff, 0.26)
+      .setDepth(9)
+      .setVisible(false);
   }
 
   private findNearbyPort(): Port | null {
     for (const port of PORTS) {
-      const distance = Phaser.Math.Distance.Between(this.ship.x, this.ship.y, port.x, port.y);
+      const distance = Phaser.Math.Distance.Between(this.shipPosition.x, this.shipPosition.y, port.x, port.y);
       if (distance <= DOCK_DISTANCE) return port;
     }
     return null;
@@ -254,9 +314,11 @@ export class MainScene extends Phaser.Scene {
 
   private renderHud(): void {
     const prompt = this.hudEl.dataset.prompt ? `<br/>${this.hudEl.dataset.prompt}` : "";
+    const waveState = Math.round((this.currentWaveHeight + 1) * 50);
     this.hudEl.innerHTML = `
       자금: ${this.player.gold}<br/>
-      화물: ${this.cargoUsed()} / ${this.player.cargoCapacity}${prompt}
+      화물: ${this.cargoUsed()} / ${this.player.cargoCapacity}<br/>
+      파도 지수: ${waveState}${prompt}
     `;
   }
 }
