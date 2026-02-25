@@ -1,0 +1,130 @@
+:root {
+  color-scheme: dark;
+  font-family: "Pretendard", "Noto Sans KR", sans-serif;
+  --hud-bg: rgba(23, 33, 41, 0.72);
+  --hud-border: rgba(247, 218, 151, 0.55);
+  --panel-bg: rgba(20, 16, 11, 0.82);
+  --panel-border: rgba(232, 205, 159, 0.62);
+  --text-main: #f6e8cf;
+  --text-sub: #e7d7bb;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 20% 10%, #143d5b 0%, #0d2437 45%, #081523 100%);
+}
+
+canvas {
+  display: block;
+}
+
+#hud {
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  z-index: 10;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  color: var(--text-main);
+  font-size: 14px;
+  backdrop-filter: blur(4px);
+}
+
+.panel {
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  width: 320px;
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  z-index: 20;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--text-main);
+  backdrop-filter: blur(5px);
+}
+
+.hidden {
+  display: none;
+}
+
+h3 {
+  margin: 0 0 8px;
+  font-family: "Georgia", serif;
+  font-size: 18px;
+}
+
+p {
+  margin: 6px 0;
+  color: var(--text-sub);
+}
+
+.trade-row {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(223, 195, 150, 0.2);
+}
+
+button {
+  margin-right: 6px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(235, 209, 168, 0.5);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #446b8c, #2a4863);
+  color: #f9efdb;
+  cursor: pointer;
+}
+
+button:hover {
+  background: linear-gradient(180deg, #527ea3, #345977);
+}
+
+#mobile-controls {
+  position: fixed;
+  left: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 15;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.ctl-row {
+  display: flex;
+  gap: 6px;
+}
+
+.ctl {
+  width: 54px;
+  height: 54px;
+  margin: 0;
+  border-radius: 14px;
+  font-weight: 700;
+  user-select: none;
+  touch-action: none;
+}
+
+.ctl.dock {
+  width: 74px;
+  font-size: 12px;
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 980px) {
+  #mobile-controls {
+    display: flex;
+  }
+
+  .panel {
+    width: min(92vw, 340px);
+  }
+}
