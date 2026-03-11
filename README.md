@@ -52,7 +52,7 @@ tcMasterProject/
 루트에서 한 번에 전체 서비스를 실행합니다.
 
 ```bash
-npm run up
+pnpm run up
 ```
 
 동일한 동작을 직접 실행하려면:
@@ -90,8 +90,8 @@ gradle bootRun
 
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 클라이언트가 `http://localhost:3000` 에서 실행됩니다.
@@ -133,14 +133,14 @@ gradle test
 ### Frontend
 ```bash
 cd frontend
-npm run test
+pnpm run test
 ```
 
 ## 종료
 
 ### Docker Compose 종료
 ```bash
-npm run down
+pnpm run down
 ```
 
 데이터 볼륨까지 삭제하려면:

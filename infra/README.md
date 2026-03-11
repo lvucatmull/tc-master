@@ -4,7 +4,7 @@
 
 ```bash
 cd /Users/seongjoo/Desktop/portfolio/tcMasterProject
-npm run up
+pnpm run up
 ```
 
 직접 compose 파일을 지정해서 실행하려면:
@@ -22,7 +22,7 @@ docker compose -f infra/docker-compose.yml up --build
 ## 종료
 
 ```bash
-npm run down
+pnpm run down
 ```
 
 데이터까지 삭제하려면:
