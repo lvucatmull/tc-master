@@ -49,7 +49,16 @@ tcMasterProject/
 
 ### 통합 실행 (권장)
 
-루트에서 한 번에 전체 서비스를 실행합니다.
+실제 비밀번호와 JWT 서명 키는 Git에 저장하지 않습니다. 예제 파일을 복사한 뒤
+로컬 전용 값을 설정합니다.
+
+```bash
+cp .env.example .env
+```
+
+`.env`의 `POSTGRES_PASSWORD`와 `JWT_SECRET`을 변경한 다음, 루트에서
+전체 서비스를 실행합니다. `JWT_SECRET`은 32자 이상의 임의 문자열을
+사용해야 합니다.
 
 ```bash
 pnpm run up
@@ -72,12 +81,15 @@ docker run -d \
   --name tcmaster-postgres \
   -e POSTGRES_DB=tcmaster \
   -e POSTGRES_USER=tcmaster \
-  -e POSTGRES_PASSWORD=tcmaster \
+  -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
   -p 5432:5432 \
   postgres:15-alpine
 ```
 
 #### 2. Backend 실행
+
+`SPRING_DATASOURCE_PASSWORD`와 `JWT_SECRET` 환경변수를 설정한 상태에서
+실행합니다.
 
 ```bash
 cd backend

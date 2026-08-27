@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/tcmaster
-    username: tcmaster
-    password: tcmaster
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/tcmaster}
+    username: ${SPRING_DATASOURCE_USERNAME:tcmaster}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
@@ -14,7 +14,7 @@ spring:
       write-dates-as-timestamps: false
 
 jwt:
-  secret: change-me-change-me-change-me-change-me
+  secret: ${JWT_SECRET}
   expiration-minutes: 60
 
 springdoc:
